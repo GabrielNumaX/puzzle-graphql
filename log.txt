@@ -1,0 +1,33 @@
+28.08.2020 -> 4 semana para completar proy
+curso node hasta 16 -> 37%
+
+30.08.2020
+curso node hasta 23 -> 54%
+
+01.09.2020
+curso node -> 100%
+
+17:34
+
+-proyect start
+
+node typescript setup
+https://khalilstemmler.com/blogs/typescript/node-starter-project/
+
+typeorm postgres example
+https://github.com/mattwelke/example-typeorm-postgres
+
+-relations
+-graphql schemas
+
+02.09.2020
+
+-postgres andando
+-se agrego jwt
+-se guarda la relacion User -> Recipes
+
+
+
+
+
+

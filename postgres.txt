@@ -1,0 +1,11 @@
+master pass 
+numax
+
+port
+5432
+
+configuracion regional por defecto
+para hora
+
+apache server port
+8080

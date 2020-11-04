@@ -1,0 +1,192 @@
+https://www.udemy.com/course/typescript/learn/lecture/2709228#overview
+
+------------------------------------------
+3
+npm i -g typescript
+
+to check
+
+tsc
+
+-------------------------------------------
+4
+function hello(string : String){
+
+  console.log("hello "+string);
+}
+
+to compile
+
+tsc nombrefile.ts
+
+-------------------------------------------
+5. understanding typescript errors
+
+-------------------------------------------
+6. the type system
+
+Boolean
+Number
+any
+
+-------------------------------------------
+7 basic types
+
+boolean
+number
+string
+array
+enum
+any
+void
+
+-------------------------------------------
+8 interfaces
+
+blueprint for the kind of object we want to use
+
+interface Stark {
+
+  name: string;
+  age: number;
+}
+
+function printName(stark: Stark){
+
+  console.log(stark.name);
+}
+
+printName({name: 'eddard'});
+
+da un error
+
+interface Stark {
+
+  name: string;
+  age?: number; //optional
+}
+
+-------------------------------------------
+9 classes
+
+class Stark {
+ 
+  name: string = 'brandon';
+
+  static castle: string = 'winterfell';
+
+  saying: string;
+
+  constructor(){
+    this.saying = Stark.castle
+  }
+
+  hello(person: string){
+     console.log('hello, '+ person)
+  }
+}
+
+var ned = new Stark();
+
+ned.saying = 'wintes is coming';
+
+ned.hello('robert')
+
+------------------------------------------
+10 inheritance
+
+------------------------------------------
+11 modules
+
+share code between files
+
+timesTwo.ts
+
+module Utility {
+
+  export class useful {
+
+    timesTwo(n:number) {
+       return n * 2;
+    }
+  }
+}
+
+en el otro arch
+
+utils.ts
+
+/// <reference path="timesTwo.ts" />
+
+var use = new Utility.useful()
+console.log(use.timesTwo(9))
+
+para compilar los dos
+
+tsc utils.ts timesTwo.ts --out util.js
+
+------------------------------------------
+12 automatically compile typescript with grunt
+
+gruntjs.com
+
+grunt-ts
+
+npm init
+
+npm i typecript --save
+
+npm i grunt --save
+
+npm i grunt-cli --save
+
+npm i grunt-ts --save
+
+grunt file
+
+gruntfile.js
+
+module.exports = function(grunt) {
+
+  grunt.loadNpmTasks('grunt-ts');
+
+  grunt.initConfig({
+
+    ts:{
+      main: {
+        src: ['typescript/main.ts'], //esto para un archivo para multiples
+        src: ['typescript/*.ts']
+        dest: 'javascript/',
+
+       //esto se usa para exportar modules
+       //y no va dest
+
+        out: 'javascript/main.js'
+      }
+    }
+  });
+
+  grunt.registerTask('default', ['ts'])
+}
+
+folder
+typescript
+
+new file
+main.ts
+
+para correr
+
+cmd
+grunt
+
+watch plugin to out/refresh compile
+-------------------------------------------
+13 congratulations
+
+
+
+
+
+
+

@@ -1,0 +1,1571 @@
+https://puzzleargentina.teachable.com/courses/1097951/lectures/23691105
+
+---------------------------------------
+8. what is Graphql
+
+query language for API
+
+-it solves over restAPI
+
+->multiple round trips
+single endpoint VS /post, /user, /task/:id, etc
+
+->over/under fetching
+
+---------------------------------------
+9. Graphql schema basics
+
+core part of graphql schema
+
+Scalar types
+-int
+-flot
+-string
+-boolean
+-ID
+
+Object Types
+group of fields
+
+Root Level types
+-entry points
+
+type Query
+
+type Mutation
+
+type Subscription
+
+Query VS Mutation
+
+Query -> executed simultaneously
+
+Mutation -> executed Sequentially
+
+Subscription
+-> even emitters
+
+--------------------------------------
+10. Graphql API overview
+
+Query
+- Task List
+- Task by Id
+- User by Id
+
+Mutation
+- Add task
+- Update Task
+- Delete Task
+- Login
+- Signup
+
+Subscription
+- User created
+
+---------------------------------------
+11. Setup GraphQl server
+
+npm i express apollo-server-express cors dotenv
+
+
+server.js
+
+const express = require('express');
+const { ApolloServer, gql } = require('apollo-server-express');
+const cors = require('cors');
+const dotEnv = require('dotenv');
+
+//set up environment variables
+dotEnv.config();
+
+const app = express();
+
+app.use(cors());
+
+app.use(express.json());
+
+const typeDefs = gql`
+  type Query {
+   greeting: String  
+  }
+`;
+
+const resolvers = {};
+
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+
+});
+
+apolloServer.applyMiddleware({app, path: '/graphql'})
+
+const PORT = process.env.PORT || 3000;
+
+app.use('/', (req, res, next) => {
+
+  res.send({message: 'hello'}) 
+})
+
+app.listen(PORT, () => {
+  console.log('server listening on PORT' + PORT);
+
+  console.log(`Graphql endpoint: ${apolloServer.graphqlPath}`)
+})
+
+***
+.env
+
+PORT=3001
+***
+
+setups nodemon
+
+npm i nodemon -D
+
+pone el script
+
+----------------------------------------
+12. GraphQl playground overview
+
+se abre en el browser
+
+NO POSTMAN
+
+engranaje para setting
+....polling = false;
+
+para q no refresqe cada dos segundos
+
+---------------------------------------
+13. Graphql resolvers and type modifiers
+
+Non-nullabel Modifier -> !
+
+List of items: []
+
+sigue con el codigo de arriba
+
+
+//la lista no puede tener null
+const typeDefs = gql`
+
+  type Query {
+    greetings: [String]!
+  }
+`;
+
+*******
+el String no puede ser null
+
+const typeDefs = gql`
+
+  type Query {
+    greetings: [String!]
+  }
+`;
+*********
+
+const resolvers = {
+ 
+  Query:{
+    greetings: () => ['hello', 'hi']
+  }
+}
+
+Si returna un valor null da un ERROR
+
+--------------------------------------
+14. User and Task Schema TypeDefs
+
+const typeDefs = gql`
+
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    tasks: [Task!]
+  }
+
+
+  type Task {
+    id: ID!
+    name: String!
+    completed: Boolean!
+    user: User!
+  }
+`;
+
+User -> Task - One to Many
+Task -> User - Many to One
+
+---------------------------------------
+15. Task List Query Resolver
+
+crea los objetos hardcodeados
+
+
+
+---------------------------------------
+16. Field Level Resolver
+
+Resolver Arguments
+
+-root/parent:
+	contains result returned from the resolver on the parent field
+
+-args: an obj with the arguments passed into the field
+
+-context: shared by all resolver, contain per-request state(auth, loaders, etc)
+
+-resolverInfo: contains query field-specific info such a field name, path to the field from the root and more
+
+
+HACE UNA QUERY A TASK EN EL RESOLVER
+y DESPUES A USER
+
+TIENE DOS OBJ HARDCODEADOS
+
+******************
+
+index.js
+
+module.exports.tasks = [
+ {id: '1', name: 'Work', completed: false, userId: '3'},
+ {id: '2', name: 'Eat', completed: true, userId: '1'},
+ {id: '3', name: 'Shopping', completed: true, userId: '4'},
+ {id: '4', name: 'Gym', completed: true, userId: '2'},
+]
+
+module.exports.users = [
+ {id: '1', name: 'Kevin', email: 'kevin@gmail.com'},
+ {id: '2', name: 'john', email: 'john@gmail.com'},
+ {id: '3', name: 'peter', email: 'peter@gmail.com'},
+ {id: '4', name: 'bob', email: 'bob@gmail.com'},
+]
+
+**************************
+
+const {tasks, user } = require ('./index.js)
+
+
+
+const resolvers = {
+
+  Query: {
+    tasks: () => tasks
+  },
+  Task: {
+    user: (parent) => users.find(user => user.id === parent.userId)
+  }
+//Q ES LO MISMO QUE
+
+  Task: {
+      user: ({userId}) => users.find(user =>   user.id === userId)
+  }
+}
+
+Y LA QUERY EN EL PLAYGROUND
+
+query {
+  tasks {
+    id
+    name
+    user {
+      id
+  }
+ }
+}
+
+FIELD LEVEL RESOLVER OVER QUERY LEVEL RESOLVER
+
+------------------------------------------
+17. get task by id Query
+
+
+sigue con lo de arriba
+
+const typeDefs = gql`
+
+  type Query {
+    tasks: [Tasks!]
+
+    task(id: ID!): Task
+  }
+
+`;
+
+y en el resolver
+
+const resolvers = {
+
+  Query: {
+    tasks: () => {
+      return tasks;
+    },
+ 
+    task: (_, args) => tasks.find(task => task.id === args.id)    
+  }
+
+//ahora lo mismo con destructuring
+
+    task: (_, {id}) => tasks.find(task => task.id === id) 
+}
+
+
+en el play ground
+
+multiple operations
+
+
+query GetAllTask {
+
+  tasks {
+    id
+    name
+  }
+}
+
+query GetTaskById {
+
+  task(id: '1'){
+    id
+    name
+    completed
+  }
+}
+
+para ejecutar uno solo
+ctrl + enter
+
+arriba de la llamada
+
+id gets casted to string even if it's a number
+
+------------------------------------------
+18. Get Users List and Get User By Id Query
+
+
+
+const typeDefs = gql`
+
+  type Query {
+
+    users: [User!]
+    user(id: ID!): User
+  }
+`;
+
+const resolver = {
+
+ Query: {
+
+  users: () => users,
+  user: (_, {id}) => users.find(user => user.id === id)
+  },
+//VER ABAJO esto no es ASI
+  User: {
+    tasks: ({id}) => tasks.find(task => task.userId === id)
+  }
+
+}
+
+
+query getAllUsers {
+ 
+  users {
+    id
+    name
+    tasks {
+      name
+    }
+  }
+}
+
+ESTO NO NADA PORQE tasks tiene q ser iterable NO OBJETO 
+entonces
+
+  User: {
+    tasks: ({id}) => tasks.filter(task => task.userId === id)
+  }
+
+filter retorna array de objs
+
+
+query getUserById {
+
+  user(id: '1'){
+    name
+    email
+    tasks {
+      name
+      id
+    }
+  }
+}
+
+------------------------------------------
+19. Create Task Mutation
+
+
+cons typeDefs = gql`
+
+  input createTaskInput {
+    name: String!
+    completed: Boolean!
+    userId: ID!
+  }
+
+  type Mutation {
+    createTask(input: createTaskInput!): Task
+  }
+`
+
+usa uuid
+
+npm i uuid
+
+para generar ids
+
+const uuid = require('uuid')
+
+
+const resolvers = {
+
+
+  Mutation: {
+    createTask: (_, {input}) => {
+       const task = {...input, id: uuid.v4()};
+
+       tasks.push(task)
+       return task;
+    }
+  }
+}
+
+
+playground
+
+
+mutation CreateTask {
+
+   createTask(input: {
+      name: 'new task'
+      completed: false
+      userId: '1'
+  }) {
+    id //esto es lo que retorna
+    name
+    completed
+  }
+}
+
+------------------------------------------20. Modularize Resolvers 
+
+schema and resolvers
+
+new folder resolvers
+
+
+task.js
+
+const {users, tasks} = require('../constants')
+
+module.exports = {
+
+  Query: {
+    tasks: () => {
+      return tasks;
+    },
+    task: (_, {id}) => {
+      return tasks.find(task = task.id === id)
+    },
+  },
+
+  Mutation: {
+
+    createTask: (_, {input}) => {
+       const task = {...input, id: uuid.v4()};
+       tasks.push(task);
+       return task;
+    }
+  },
+  
+  Task: {
+    user: ({userId}) => {
+      return users.find(user => user.id === userId)
+    }
+  }
+}
+
+
+user.js
+
+module.exports = {
+
+  Query: {
+    users: () => users,
+   
+    user: (_, {id}) => users.find(user => user.id === id)
+  }
+
+  User: {
+    tasks: ({id}) => tasks.filter(task => task.userId === id)
+  }
+}
+
+index.js -> for resolvers
+
+const userResolver = require('./user');
+const taskResolver = require('./task');
+
+module.exports = [
+  userResolver,
+  taskResolver
+];
+
+y en server.js
+
+
+const resolvers = require('./resolvers'))
+
+y lo de abajo queda igual porq es el mismo nombre
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers // es el mismo nombre
+})
+
+------------------------------------------
+21. Modularize Schema ( Schema Stiching ) 
+
+
+combine multiple schemas -> stitching
+
+only one type (Query, Mutation, etc)for a Schema -> root level
+
+extend type User {
+  address: String
+}
+
+IS NOT INHERITANCE != extends
+
+cant extend or have empty type
+
+new folder typeDefs
+
+task.js
+
+const gql = require('apollo-server-express');
+
+module.exports = gql`
+
+  extend type Query {
+    tasks: [Task!]
+    task(id: ID!): Task
+  }
+
+  input createTask {
+
+   name: String!
+   completed: Boolean!
+   userId: ID!
+  }
+
+  extend type Mutation {
+    createTask(input: createTaskInput!): Task
+  }
+
+  type Task {
+    id: ID!
+    name: String!
+    completed: Boolean!
+    user: User!
+  }
+
+`;
+
+user.js
+
+const gql = require('apollo-server-express');
+
+module.exports = gql`
+
+  extend type Query {
+    users: [User!]
+    user(id: ID!): User
+  }
+
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    tasks: [Task!]
+  }
+`
+
+index.js
+
+const gql = require('apollo-server-express')
+
+const userTypeDefs = require('./user');
+
+conts taskTypeDefs = require('./task');
+
+const typeDefs = gql`
+
+  type Query {
+    _: String //pone esto para q no este vacio
+  }
+
+  type Mutation {
+    _: String
+  }
+`
+
+//aca exporta todo
+
+module.exports = [
+  typeDefs,
+  userTypeDefs,
+  taskTypeDefs
+]
+
+y en server.js
+
+const typeDefs = require('./typeDefs');
+
+y lo de abajo queda igual xq es el mismo nombre
+
+------------------------------------------
+22. MongoDB Connectivity
+
+crea otra carpeta
+para hacer la db
+
+part1 y part2
+
+npm i mongoose
+
+create database/util/index.js
+
+------------------------------------------
+23. User and Task Mongoose Schema 
+
+------------------------------------------
+24. Signup Mutation
+
+robomongo.org
+it's like compass
+
+graphql id virtual getter
+
+
+/typeDefs/user.js
+
+...= gql`
+...
+  
+  extend type Mutation {
+     signup(input: signupInput!): User
+  }
+
+  input signupInput {
+    name: String!
+    email: String!
+    password: String!
+  }
+
+...
+`;
+
+/resolvers/user.js
+
+instala bcrypt
+
+npm i bcrypt
+const User = require('../database/models/user')
+const bcrypt = require('bcrypt')
+
+module.exports = {
+...
+
+  Mutation: {
+    signup: async (_. {input}) => {
+      try{
+        
+	const user = await User.findOne({email: input.email});
+
+	if(user) {
+           throw new Error('Email already in use');
+         }
+
+         const hashedPassword = await bcrypt.hash(input.password, 12);
+
+         const newUser = new User({...input, password: hashedPassword});
+
+         const result = await newUser.save();
+
+	  return result;
+      }
+      catch (error) {
+    
+         console.log(error)
+         throw error;
+      }
+
+      }
+  }
+
+
+...
+};
+
+en el playground
+
+localhost:port/graqhql
+
+mutation createUser {
+
+  signup(input: {
+     name: ...,
+     email: ....,
+     password: ....;
+ }) { //esto es lo que retorna
+    id
+    name
+    email
+  }
+}
+
+------------------------------------------
+25. Custom Date Scalar Type
+
+npm i graphql-iso-date
+
+/typeDefs/index
+
+gql`
+
+  scalar Date
+`
+
+/resolver/index.js
+
+const {GraphQLDateTime} = require('graphql-iso-date')
+
+conts customDateScalarResolver = {
+
+  Date: GraphQLDateTime
+}
+
+
+module.exports = [
+
+  userResolver,
+  taskResolver,
+  customDateScalarResolver
+]
+
+va a /typeDefs/user.js
+
+
+ type User {
+    ....
+    createdAt: Date!
+    updatedAt: Date!
+  }
+
+esto cambio el formato de la fecha
+
+-----------------------------------------
+26. Authentication Login Mutation
+
+instala jsonwebtoken
+
+npm i jsonwebtoken
+
+Query runs simultaneously
+Mutation sequentialy
+
+/typeDefs/user.js
+
+
+  extedn type Mutation {
+     ...
+     login(input: loginInput): Token
+  }
+
+  type Token {
+    token: String!
+  }
+
+  input loginInput {
+    email: String!
+    password: String!
+  }
+
+
+resolver/user.js
+
+const jwt = require('jsonwebtoken')
+
+
+ Mutation {
+
+
+     login: async (_, {input}) => {
+
+       try {
+  
+	  const user = await User.findOne({email: input.email});
+
+	if(!user) {
+	  throw new Error('User not found');
+	}
+
+	const isPasswordValid = await bcrypt.compare(input.password, user.password);
+
+         if(!isPasswordValid){
+
+           throw new Error('Incorrect Password')
+	 }
+
+         const token = jwt.sign({email: user.email}, secretKey, {expiresIn: '1d'}) //la pone en .env
+
+          return {token}
+       }
+       catch(error) {
+
+          console.log(error)
+	  throw error;
+       }     
+
+     }
+  }
+
+Playground
+
+mutation login {
+
+  login(input: {
+    email:
+    password:
+  }) {
+     token
+  }
+}
+
+------------------------------------------
+27. Resolver Context
+
+3rd argument in the resolver function
+
+context: share comon data in resolvers
+
+in server.js
+
+this approach is static
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: {
+    email: 'somestring'
+  }
+});
+
+***************
+per request value -> function
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: () => {
+    
+  }
+});
+
+------------------------------------------
+28. Verify Token and Set Auth Context
+
+pone el token el el HTTP header
+
+/helper/context/index.js
+
+const jwt = require('jsonwebtoken')
+
+module.exports.verifyUser = async (req) = {
+
+  try {
+
+    req.email = null;
+
+    console.log(req.headers)
+
+    const bearerHeader = req.headers.authorization;
+ 
+    if(bearerHeader) {
+
+      const token = bearerHeader.split(' ')[1] //esto lo hacer porque le pone 'bearer' al header
+
+     const payload = jwt.verify(token, secretKeyFromEnv)
+
+    req.email = payload.email;
+    }
+  }
+  catch(error) {
+    console.log(error)
+    throw error
+
+  }
+}
+
+***************
+en server.js
+
+const {verifyUser} = require('./helper/context')
+
+
+per request value -> function
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: async ({req}) => {
+    
+     await verifyUser(req);
+
+     return { email: req.email}
+  }
+});
+
+Playground
+
+loguea el email
+
+Resolver Middleware para asegurar endpoints
+
+------------------------------------------
+29. Combine Resolver/Resolver Middleware
+
+npm i graphql-resolvers
+
+/resolvers/middleware/index.js
+
+const {skip} = require('graphql-resolver')
+
+module.exports.isAuthenticated = (_, __, {email}) = {
+  
+  if(!email) {
+
+    throw new Error('Access Denied. Please Login')
+  }
+  
+  return skip;
+}
+
+//skip same as next
+
+**************
+
+/resolvers/user.js
+
+const {combineResolvers} = require('graphql-resolvers');
+
+const {isAuthenticated} = require('./middleware')
+
+
+module.exports = {
+ 
+  Query: {
+    user: combineResolvers(isAuthenticated, (_, {id}, {email}) => {
+    return userd.find(user => user.id === id)
+    })
+  },
+}
+
+-----------------------------------------
+30. UPDATING Get User By Id
+
+en /typeDefs/user.js
+
+gql`
+
+  extend type Query {
+//removes get all users
+    user: User
+  }
+`
+***********
+
+/resolvers/user.js
+
+const {combineResolvers} = require('graphql-resolvers');
+
+const {isAuthenticated} = require('./middleware')
+
+
+module.exports = {
+ 
+  Query: {
+    user: combineResolvers(isAuthenticated, async (_, __, {email}) => {
+    try {
+      const user = await User.findOne({email});
+
+      if(!user){
+        throw new Error('User not found')
+      }
+      return user
+    }
+    catch(error){
+      console.log(error)
+      throw error;
+    }
+    })
+  },
+}
+
+------------------------------------------
+31. UPDATING Create Task Mutation
+
+
+------------------------------------------
+32. UPDATING List Task and Get Task By Id 
+
+------------------------------------------
+33. UpdateModify Task Mutation
+
+------------------------------------------
+34. Delete Task Mutation
+
+aca borra la task de la collectio
+y tambien la ref del array del task en user model
+
+deleteTask: combineResolvers(isAuthenticated, isTaskOwner,async (_, {id}, {loggedInUserId}) => {
+
+  const task = await Task.findByIdAndDelete(id)
+
+  await User.updateOne({_id: loggedInUserId}, {$pull: {tasks: task.id}})
+
+  return task;
+
+try catch como siempre
+})
+
+------------------------------------------
+35. Offset Limit Pagination ( Task List )
+
+offset -> limit you want to skip
+limit -> what you want to show
+
+/typeDefs/tasks.js
+
+gql`
+
+  extend type Query {
+
+    tasks(skip: Int, limit: Int): [Tasks!]
+  }
+`
+
+*******************************
+task resolver
+
+/resolvers/task.js
+
+Query: {				 	 //default values if not passed
+  tasks: combineResolvers (isAuthenticated, async (_, {skip=0, limit=10}, {loggedInUserId}) => {
+
+    try {
+      const tasks = await Task.find({user: loggedInUserID}).sort({_id: -1}).skip(skip).limit(limit)
+ 
+    return tasks;
+    }
+    catch(error) {
+
+      console.log(error)
+      throw error;
+    }
+  })
+}
+
+DISADVANTAGES OF OFFSET LIMIT PAGINATION
+-> duplicated records if list updated freq
+-> performance 
+
+SO Cursor Based Pagination
+
+------------------------------------------
+36. Offset limit Pagination Vs Cursor Based Pagination 
+
+si la tabla se actualiza
+es posible obtener los mismo resultados
+en la sig pagination
+
+Cursor Based
+
+Utiliza una referencia del ultimo item
+para  hacer la pagination
+
+MAS PRO
+
+regarding performance
+
+dv scans directly to reference instead of all over to skip and limit
+
+------------------------------------------
+37. Cursor Based Pagination ( Task List )
+
+it works better with Id
+
+
+/typeDefs/tasks.js
+
+gql`
+
+  extend type Query {
+    tasks(cursor: String, limit: Int) : TaskFeed!
+  }
+
+  type TaskFeed {
+    taskFeed: [Task!]
+    pageInfo PageInfo!
+  }
+
+  type PageInfo {
+    nextPageCursor: String
+    hasNextPage: Boolean 
+  }
+`
+
+*****************
+task resolver
+
+/resolvers/task.js
+
+//mirar abajo por esto
+
+const {stringToBase64, base64ToString} = require('../helper/index')
+
+Query: {				 	
+  tasks: combineResolvers (isAuthenticated, async (_, {cursor, limit=10}, {loggedInUserId}) => {
+
+    try {
+      const query = {user: loggedInUserId}
+
+      if(cursor) {
+        query['_id'] = {
+          '$lt': base64ToString(cursor) //less thann
+     
+        }
+      }
+      let tasks = await Task.find(query).sort({_id: -1}).limit(limit + 1);
+
+    //this returns boolean
+    const hasNextPage = tasks.length > limit;
+
+    tasks = hasNextPage ? tasks.slice(0, -1) : tasks;
+ 
+    return {
+       taskFeed: tasks,
+       pageInfo: {
+         nextPageCursor: hasNextPage ? stringToBase64(tasks[tasks.length - 1].id): null,
+         hasNextPage: hasNextPage
+         OR
+         hasNextPage
+        }
+      };
+    }
+    catch(error) {
+
+      console.log(error)
+      throw error;
+    }
+  })
+}
+
+//meta data info for pagination
+
+Playground
+
+query getAllTasks {
+  tasks(limit: 5, AND cursor: '...') {
+    taskFeed {
+      id
+      name
+    }
+    pageInfo {
+      nextPageCursor
+      hasNextPage
+    }
+  }
+}
+
+//hide implementation detail for pageInfo
+->base64 encode
+
+/helper/index.js
+
+module.exports.stringToBase64 = (data) => Buffer.from(data).toString('base64');
+
+module.exports.base64ToString = (data) => Buffer.from(data, 'base64').toString('ascii');
+
+------------------------------------------
+38. Data Loaders- What and Why
+
+-populate could lead to overfetching
+
+-deep query complication
+
+4th resolver arg -> resolver info
+
+multiple populates
+
+-redundant DB hits affecting performance
+
+*********************************
+
+DATA LOADERS
+
+batch and cache DB requests
+
+mongoose.set('debug', true)
+
+//log db querys
+
+
+por cada tasks hace un find a user por la cantidad de tasks
+
+esta library hace una sola
+
+Recomends NOT TO USE CACHING
+'cause data may change in back but no in front in new (cached) query
+
+------------------------------------------
+39. Implementing Data Loaders
+
+npm i dataloader
+
+tick -> iteration of node event loop
+
+/loaders/user.js
+
+const User = require('../database/models/user')
+
+module.exports.batchUsers = async (usersId) => {
+  const users = await User.find({_id: {$in: usersId}});
+
+//esto es para ordenarlo
+  return usersId.map(userId => users.find(user => user.id === userId))
+}
+
+******************
+/loaders/index.js
+
+const user = require('./user');
+
+module.exports = {
+
+  user
+}
+
+uses this instead of user context
+
+****************************
+server.js
+
+const Dataloader = require('dataloader')
+
+const loaders = require('./loaders')
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: async({req}) => {
+    await verifyUser(req)
+
+    return {
+      email: req.email
+      loggedInUserId: req.loggedInUserId
+      loaders: {
+        user: new Dataloader(keys => loaders.user.batchUsers(keys))
+      }
+    }
+  }
+});
+
+//now uses loader instead of field level resolver
+
+***********
+/resolvers/task.ks
+
+  Task: {
+    user: async (parent, _, {loaders} ) => {
+      try {
+        const user = await loaders.user.load(parent.user.toString());
+
+        return user;
+      }
+     catch(error){
+        console.log(error)
+        throw error;
+      }
+    }
+  }
+
+***************************
+for caching NOT SUGESTED
+
+server.js
+
+const Dataloader = require('dataloader')
+
+const loaders = require('./loaders')
+
+const userLoader = new Dataloader(keys => loaders.user.batchUsers(keys));
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: async({req}) => {
+    await verifyUser(req)
+
+    return {
+      email: req.email
+      loggedInUserId: req.loggedInUserId
+      loaders: {
+        user: userLoader
+      }
+    }
+  }
+});
+
+-------------------------------------------
+40. User Subscription
+
+graphql subscription with apollo server
+
+server.js
+
+al final
+
+const httpServer = app.listen(PORT, => {
+
+  console.log(`Server listening on PORT ${PORT}`);
+
+  console.log(`Graphql Endpoint: ${apolloServer.graphqlPath}`)
+})
+
+apolloServer.installSubscriptionHandlers(httpServer);
+
+**************
+en server.js tambien
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: async({req, connection}) => {
+
+    const contextObj = {}
+
+    if(req) {
+      await verifyUser(req)
+   
+      contextObj.email = req.email;
+      contextObj.loggedInUserId = req.loggedInUserId;
+    }
+ 
+     contextObj.loaders = {
+  
+       user: new Dataloader(keys => loaders.user.batchUsers(keys))
+     };
+
+     return contextObj;
+  }
+});
+
+*************************
+/typeDefs/index.js
+
+gql`
+  ...
+  type Subscription {
+    _: String
+  }
+`;
+
+/typeDefs/user.js
+
+ extend type Subscription {
+
+   userCreated: User
+ }
+
+***************
+/subcription/index.js
+
+const {PubSub} = require('apollo-server-express')
+
+module.exports = new PubSub();
+
+/subcription/events/user.js
+
+module.exports = {
+  USER_CREATED: 'USER_CREATED'
+}
+
+/subcription/events/index.js
+
+const userEvents = require('./user')
+
+module.exports = {
+  userEvents
+}
+
+********************
+/resolvers/user.js
+
+const PubSub = require('../subscription');
+const {userEvents} = require('../subscription/events')
+
+
+ Subscription: {
+   userCreated: {
+      subscribe: () => PubSub.asyncIterator(userEvents.USER_CREATED)
+  }
+ }
+
+*********************
+publish subcription
+
+same file
+
+/resolvers/user.js
+
+Mutation: {
+    signup: async (_. {input}) => {
+      try{
+        
+	const user = await User.findOne({email: input.email});
+
+	if(user) {
+           throw new Error('Email already in use');
+         }
+
+         const hashedPassword = await bcrypt.hash(input.password, 12);
+
+         const newUser = new User({...input, password: hashedPassword});
+
+         const result = await newUser.save();
+          PubSub.publish(userEvent.USER_CREATED, {userCreated: result})
+	  return result;
+      }
+      catch (error) {
+    
+         console.log(error)
+         throw error;
+      }
+
+      }
+  }
+
+*******************
+playground
+
+two windows
+
+1->
+
+subscription {
+  userCreated {
+    id
+    name
+    email
+  }
+}
+
+le da play y queda escuchando
+
+2->
+
+mutation Signup {
+
+  signup(input: {
+    name: '...'
+    email:'...'
+    password: '...'
+  }) {
+    id
+    name
+  }
+}
+
+POR CADA Signup
+
+LOGUEA EN LA 1 la data
+
+-------------------------------------------
+41. Format GraphQL Error Response and Query Variables Overview
+
+server.js
+
+const apolloServer = new ApolloServer({
+
+  typeDefs,
+  resolvers,
+  context: async({req}) => {
+    await verifyUser(req)
+
+    return {
+      email: req.email
+      loggedInUserId: req.loggedInUserId
+      loaders: {
+        user: userLoader
+      }
+    }
+  },
+  formatError: (error) => {
+    console.log(error)
+    return { message: error.message}
+  }
+});
+
+*********************************
+QUERY VARIABLES bottom left of graphql screen 
+
+mutation login($email: String!, $password: String!) {
+
+   login(input: {email: $email, password: $password}) {
+    token
+  }
+}
+
+QUERY VARIABLE 
+
+{
+
+  email: '...'
+  password: '...'
+}
+
+---------------------------------------
+42. SOURCE CODE
+
+rapidDevPro
+
+
+
+
+
+
+
+
